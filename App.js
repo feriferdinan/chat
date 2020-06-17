@@ -15,9 +15,13 @@ import {
   Text,
   StatusBar,
   TouchableOpacity,
-  FlatList
+  FlatList,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import SocketIo from 'socket.io-client';
+import { GiftedChat } from 'react-native-gifted-chat'
+
 
 
 
@@ -54,52 +58,49 @@ class App extends Component {
 
     this.socket.on("new message", (data) => {
       console.log(data);
-      this.setState({ data: [...this.state.data, data] })
+      this.setState(previousState => ({
+        data: GiftedChat.append(previousState.data, [data]),
+      }))
     });
 
     this.socket.on("received", (data) => {
       console.log(data);
-      this.setState({ data: [...this.state.data, data] })
+      this.setState(previousState => ({
+        data: GiftedChat.append(previousState.data, [data]),
+      }))
     });
 
     console.log("end didmount");
   }
+  onSend(messages = []) {
+    messages[0].rid = 1
+    messages[0].user.name = "feri_mobile"
+    console.log(messages, 'messages');
+    // this.setState(previousState => ({
+    //   data: GiftedChat.append(previousState.data, messages),
+    // }))
+    this.socket.emit("send message", messages[0]);
+    this.socket.emit("received", messages[0]);
+  }
 
-  tesEmit = () => {
-    this.socket.emit("send message", {
-      from: "feri_mobile",
-      to: "feri_html",
-      message: "tes dari feri_mobile",
-      author: "feri_mobile_1",
-      rid: 1,
-      files: "",
-    });
-    this.socket.emit("received", {
-      from: "feri_mobile",
-      to: "feri_html",
-      message: "tes dari feri_mobile",
-      author: "feri_mobile_1",
-      rid: 1,
-      files: "",
-    });
-    console.log("pressed");
-
+  scrollToEnd = () => {
+    this.flatList.scrollToEnd({ animated: true });
   }
   render() {
     return (
-      <View style={{ flex: 1, padding: 16 }}>
-        <FlatList
-          data={this.state.data}
-          keyExtractor={(item, index) => "key" + index.toString()}
-          renderItem={({ item, index }) => {
-            return (<Text>{item.from}: {item.message}</Text>)
+      <View style={{ flex: 1 }}>
+        <GiftedChat
+          messages={this.state.data}
+          onSend={messages => this.onSend(messages)}
+          scrollToBottom={true}
+          isTyping={true}
+          user={{
+            _id: 1,
           }}
         />
-        <View style={{ alignContent: "center" }}>
-          <TouchableOpacity style={{ padding: 20, backgroundColor: "green", borderRadius: 50, position: "absolute", bottom: 20 }} onPress={this.tesEmit}>
-            <Text style={{ color: "white" }}>send</Text>
-          </TouchableOpacity>
-        </View>
+        {/* {
+          Platform.OS === 'android' && <KeyboardAvoidingView behavior="padding" />
+        } */}
       </View>
     )
   }
