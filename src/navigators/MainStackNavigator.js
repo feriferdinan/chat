@@ -14,23 +14,8 @@ import IconE from 'react-native-vector-icons/Entypo';
 const MainStack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-import { HomeScreen, ChatScreen } from '../components/screens';
+import { HomeScreen, ChatScreen, SettingScreen, ContactListScreen } from '../components/screens';
 import config from '../config'
-function ContactScreen() {
-    return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text>ContactScreen!</Text>
-        </View>
-    );
-}
-
-function SettingScreen() {
-    return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text>SettingScreen!</Text>
-        </View>
-    );
-}
 
 
 function MainTab() {
@@ -57,7 +42,7 @@ function MainTab() {
                 activeTintColor: config.BASE_COLOR,
                 inactiveTintColor: 'gray',
             }}>
-            <Tab.Screen name="Contact" component={ContactScreen} />
+            <Tab.Screen name="Contact" component={ContactListScreen} />
             <Tab.Screen name="Chat" component={HomeScreen} />
             <Tab.Screen name="Setting" component={SettingScreen} />
         </Tab.Navigator >

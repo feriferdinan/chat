@@ -26,7 +26,7 @@ export default function () {
         if (state.loading) {
             return <RootStack.Screen name={'Splash'} component={SplashScreen} />;
         }
-        return !state.user ? (
+        return state.user ? (
             <RootStack.Screen name={'MainStack'}>
                 {() => (
                     <UserContext.Provider value={state.user}>

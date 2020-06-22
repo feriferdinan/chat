@@ -24,7 +24,7 @@ export default function AuthStackNavigator() {
                     </LoginStack.Navigator>
                 )}
             </AuthStack.Screen>
-            <AuthStack.Screen name={'Registration'} component={RegisterScreen} />
+            <AuthStack.Screen name={'Register'} component={RegisterScreen} />
         </AuthStack.Navigator>
     );
 }
