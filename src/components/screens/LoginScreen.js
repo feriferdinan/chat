@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, createRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, ToastAndroid } from 'react-native'
 import { AuthContext } from '../../contexts';
 const screenWidth = Math.round(Dimensions.get('window').width);
@@ -14,7 +14,7 @@ export default function LoginScreen({ navigation }) {
     const [password, setPassword] = useState('123');
     const [icEye, setIcEye] = useState('visibility-off');
     const [showPassword, setShowPassword] = useState(true);
-    const [loading, setLoading] = useState(false);
+    const [isLoading, setLoading] = useState(false);
     const [error, setError] = useState('');
     changePwdType = () => {
         if (showPassword) {
@@ -41,11 +41,13 @@ export default function LoginScreen({ navigation }) {
             setLoading(true);
             login({ email, password })
         } catch (e) {
-            setError(e.message);
+            console.log(e, "error");
             setLoading(false);
+            setError(e.message);
         }
         // }
     }
+    secondTextInput = createRef()
     return (
 
         <View style={styles.container}>
@@ -60,7 +62,7 @@ export default function LoginScreen({ navigation }) {
                         placeholderTextColor="grey"
                         returnKeyType={"next"}
                         autoFocus={true}
-                        // onSubmitEditing={() => secondTextInput.focus()}
+                        onSubmitEditing={() => secondTextInput.focus()}
                         onChangeText={(email) => setEmail(email)}
                     />
                     <Icon
@@ -79,7 +81,7 @@ export default function LoginScreen({ navigation }) {
                         value={password}
                         placeholder="Masukan Password Anda"
                         secureTextEntry={showPassword}
-                        // ref={(input) => { secondTextInput = input; }}
+                        ref={(input) => { secondTextInput = input; }}
                         returnKeyType={"go"}
                         placeholderTextColor="grey"
                         onChangeText={(text) => setPassword(text)}
@@ -90,20 +92,18 @@ export default function LoginScreen({ navigation }) {
                         size={16}
                         color="rgba(0,0,0,0.5)"
                     />
-                    <Icon
-                        style={styles.icon}
-                        name={icEye}
-                        size={25}
-                        color={"#aeaeae"}
-                        onPress={changePwdType}
-                    />
-                </View>
-                {/* <View style={{ marginVertical: 10 }}> */}
-                <TouchableOpacity activeOpacity={0.5} style={styles.button} onPress={handleLogin}>
-                    <Text style={styles.buttonText}>LOGIN</Text>
-                </TouchableOpacity>
-                {/* </View> */}
+                    <TouchableOpacity activeOpacity={0.5} style={styles.icon} onPress={changePwdType}>
+                        <Icon
+                            name={icEye}
+                            size={25}
+                            color={"#aeaeae"}
 
+                        />
+                    </TouchableOpacity>
+                </View>
+                <TouchableOpacity disabled={isLoading} activeOpacity={0.5} style={[styles.button, { backgroundColor: isLoading ? "#ccc" : config.BASE_COLOR }]} onPress={handleLogin}>
+                    <Text style={styles.buttonText}>{isLoading ? "Loading..." : "LOGIN"}</Text>
+                </TouchableOpacity>
             </View>
             <View style={{ justifyContent: 'center', alignItems: 'center', position: "absolute", bottom: 20 }}>
                 <Text>Don't have an account yet?</Text>

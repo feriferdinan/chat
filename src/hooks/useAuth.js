@@ -36,21 +36,18 @@ export function useAuth() {
     const auth = React.useMemo(
         () => ({
             login: async (param) => {
-                try {
-                    const { data } = await axios.post(`${config.API_BASE_URL}/auth/login`, {
-                        email: param.email,
-                        password: param.password
-                    });
-                    const user = {
-                        userdata: data.data,
-                        token: data.token,
-                    };
-                    console.log(data, 'data');
-                    await AsyncStorage.setItem('user', JSON.stringify(user));
-                    dispatch(createAction('SET_USER', user));
-                } catch (error) {
-                    console.log(error, "erro");
-                }
+                const { data } = await axios.post(`${config.API_BASE_URL}/auth/login`, {
+                    email: param.email,
+                    password: param.password
+                });
+                const user = {
+                    userdata: data.data,
+                    token: data.token,
+                };
+                console.log(data, 'data');
+                await AsyncStorage.setItem('user', JSON.stringify(user));
+                dispatch(createAction('SET_USER', user));
+
             },
             logout: async () => {
                 await AsyncStorage.clear();
