@@ -11,7 +11,9 @@ import IconMCI from 'react-native-vector-icons/MaterialCommunityIcons';
 import IconE from 'react-native-vector-icons/Entypo';
 import config from '../../config';
 
-export default function HomeScreen({ navigation }) {
+import { connect } from 'react-redux'
+
+function HomeScreen({ navigation, loginData }) {
 
     useEffect(() => {
         socket = SocketIo.connect(config.SOCKET_BASE_URL, {
@@ -36,6 +38,7 @@ export default function HomeScreen({ navigation }) {
         });
     }
 
+    console.log(loginData, 'loginData');
 
     return (
         <Container background=" ">
@@ -64,3 +67,13 @@ export default function HomeScreen({ navigation }) {
         </Container >
     );
 }
+
+const mapStateToProps = (state) => {
+    return {
+        loginData: state.authReducer,
+    };
+};
+
+const mapDispatchToProps = null
+
+export default connect(mapStateToProps, mapDispatchToProps)(HomeScreen);

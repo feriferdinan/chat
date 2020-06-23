@@ -1,8 +1,10 @@
 import React, { useContext } from 'react';
 import { Container, Header, Content, Button, ListItem, Text, Icon, Left, Body, Right, Switch } from 'native-base';
-import { AuthContext } from '../../contexts'
-export default function SettingScreen({ navigation }) {
-    const { logout } = useContext(AuthContext);
+// import { AuthContext } from '../../contexts'
+import { logout } from '../../redux/actions/authAction'
+import { connect } from 'react-redux'
+function SettingScreen({ navigation, loginAction }) {
+    // const { logout } = useContext(AuthContext);
 
     return (
         <Container>
@@ -20,7 +22,7 @@ export default function SettingScreen({ navigation }) {
                         <Icon name="arrow-forward" />
                     </Right>
                 </ListItem>
-                <ListItem icon button={true} onPress={logout}>
+                <ListItem icon button={true} onPress={loginAction}>
                     <Left>
                         <Button style={{ backgroundColor: "red" }}>
                             <Icon active name="ios-log-out" />
@@ -37,3 +39,18 @@ export default function SettingScreen({ navigation }) {
         </Container>
     );
 }
+
+
+const mapStateToProps = (state) => {
+    return {
+        loginData: state.authReducer,
+    };
+};
+
+const mapDispatchToProps = (dispatch) => {
+    return {
+        loginAction: () => dispatch(logout()),
+    };
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(SettingScreen);

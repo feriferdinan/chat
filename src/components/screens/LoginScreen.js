@@ -1,21 +1,21 @@
 import React, { useState, useContext, createRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, ToastAndroid } from 'react-native'
 import { AuthContext } from '../../contexts';
-const screenWidth = Math.round(Dimensions.get('window').width);
-const screenHeight = Math.round(Dimensions.get('window').height);
 import config from '../../config'
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { TouchableHighlight } from 'react-native-gesture-handler';
-const reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+import { login } from '../../redux/actions/authAction'
+import { connect } from 'react-redux';
 
-export default function LoginScreen({ navigation }) {
-    const { login } = useContext(AuthContext);
+const reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+const screenWidth = Math.round(Dimensions.get('window').width);
+const screenHeight = Math.round(Dimensions.get('window').height);
+
+function LoginScreen({ navigation, loginAction, loginData }) {
+    // const { login } = useContext(AuthContext);
     const [email, setEmail] = useState('user2@gmail.com');
     const [password, setPassword] = useState('123');
     const [icEye, setIcEye] = useState('visibility-off');
     const [showPassword, setShowPassword] = useState(true);
-    const [isLoading, setLoading] = useState(false);
-    const [error, setError] = useState('');
     changePwdType = () => {
         if (showPassword) {
             setShowPassword(false)
@@ -28,25 +28,20 @@ export default function LoginScreen({ navigation }) {
         }
     }
     handleLogin = () => {
-        // if (!email || !password) {
-        //     ToastAndroid.showWithGravityAndOffset(
-        //         "Email & Password is required!",
-        //         ToastAndroid.LONG,
-        //         ToastAndroid.BOTTOM,
-        //         0,
-        //         200
-        //     );
-        // } else {
-        try {
-            setLoading(true);
-            login({ email, password })
-        } catch (e) {
-            console.log(e, "error");
-            setLoading(false);
-            setError(e.message);
+        if (!email || !password) {
+            ToastAndroid.showWithGravityAndOffset(
+                "Email & Password is required!",
+                ToastAndroid.LONG,
+                ToastAndroid.BOTTOM,
+                0,
+                200
+            );
+        } else {
+            loginAction({ email, password })
         }
-        // }
     }
+    console.log(loginData, 'loginData');
+
     secondTextInput = createRef()
     return (
 
@@ -61,7 +56,7 @@ export default function LoginScreen({ navigation }) {
                         placeholder="Masukan Email Anda"
                         placeholderTextColor="grey"
                         returnKeyType={"next"}
-                        autoFocus={true}
+                        // autoFocus={true}
                         onSubmitEditing={() => secondTextInput.focus()}
                         onChangeText={(email) => setEmail(email)}
                     />
@@ -101,8 +96,8 @@ export default function LoginScreen({ navigation }) {
                         />
                     </TouchableOpacity>
                 </View>
-                <TouchableOpacity disabled={isLoading} activeOpacity={0.5} style={[styles.button, { backgroundColor: isLoading ? "#ccc" : config.BASE_COLOR }]} onPress={handleLogin}>
-                    <Text style={styles.buttonText}>{isLoading ? "Loading..." : "LOGIN"}</Text>
+                <TouchableOpacity disabled={loginData.isLoading} activeOpacity={0.5} style={[styles.button, { backgroundColor: loginData.isLoading ? "#ccc" : config.BASE_COLOR }]} onPress={handleLogin}>
+                    <Text style={styles.buttonText}>{loginData.isLoading ? "Loading..." : "LOGIN"}</Text>
                 </TouchableOpacity>
             </View>
             <View style={{ justifyContent: 'center', alignItems: 'center', position: "absolute", bottom: 20 }}>
@@ -190,3 +185,24 @@ const styles = StyleSheet.create({
     }
 
 });
+
+
+// Map State To Props (Redux Store Passes State To Component)
+const mapStateToProps = (state) => {
+    // Redux Store --> Component
+    return {
+        loginData: state.authReducer,
+    };
+};
+
+// Map Dispatch To Props (Dispatch Actions To Reducers. Reducers Then Modify The Data And Assign It To Your Props)
+const mapDispatchToProps = (dispatch) => {
+    // Action
+    return {
+        // Login
+        loginAction: (props) => dispatch(login(props)),
+    };
+};
+
+// Exports
+export default connect(mapStateToProps, mapDispatchToProps)(LoginScreen);

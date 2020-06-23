@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React from 'react';
+import React, { useState } from 'react';
 import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -11,28 +11,36 @@ import { AuthContext, UserContext, ThemeContext } from './contexts'
 import { lightTheme } from './theme/light'
 import { darkTheme } from './theme/dark'
 
-import { useAuth } from './hooks/useAuth'
+// import { useAuth } from './hooks/useAuth'
+import { connect } from 'react-redux'
 
 const RootStack = createStackNavigator();
 
-export default function () {
-    const { auth, state } = useAuth();
+function App({ loginData }) {
+    // const { auth, state } = useAuth();
+    const [load, setLoad] = React.useState(true);
     const [isDarkMode, setIsDarkMode] = React.useState(false);
     const switchTheme = React.useCallback(() => {
         setIsDarkMode(!isDarkMode);
     }, [isDarkMode]);
-
+    React.useEffect(() => {
+        if (loginData) {
+            setTimeout(() => {
+                setLoad(false)
+            });
+        }
+    }, []);
     function renderScreens() {
-        if (state.loading) {
+        if (load) {
             return <RootStack.Screen name={'Splash'} component={SplashScreen} />;
         }
-        return state.user ? (
-            <RootStack.Screen name={'MainStack'}>
-                {() => (
-                    <UserContext.Provider value={state.user}>
-                        <MainStackNavigator />
-                    </UserContext.Provider>
-                )}
+        return loginData.isLogin ? (
+            <RootStack.Screen name={'MainStack'} component={MainStackNavigator}>
+                {/* {() => (
+                    // <UserContext.Provider value={state.user}>
+                            <MainStackNavigator />
+                    //  </UserContext.Provider>
+                )} */}
             </RootStack.Screen>
         ) : (
                 <RootStack.Screen name={'AuthStack'} component={AuthStackNavigator} />
@@ -41,18 +49,28 @@ export default function () {
 
     return (
         <ThemeContext.Provider value={switchTheme}>
-            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-            <AuthContext.Provider value={auth}>
-                <NavigationContainer theme={isDarkMode ? darkTheme : lightTheme}>
-                    <RootStack.Navigator
-                        screenOptions={{
-                            headerShown: false,
-                            animationEnabled: false,
-                        }}>
-                        {renderScreens()}
-                    </RootStack.Navigator>
-                </NavigationContainer>
-            </AuthContext.Provider>
+            {/* <AuthContext.Provider value={auth}> */}
+            <NavigationContainer theme={isDarkMode ? darkTheme : lightTheme}>
+                <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+                <RootStack.Navigator
+                    screenOptions={{
+                        headerShown: false,
+                        animationEnabled: false,
+                    }}>
+                    {renderScreens()}
+                </RootStack.Navigator>
+            </NavigationContainer>
+            {/* </AuthContext.Provider> */}
         </ThemeContext.Provider>
     );
 }
+
+const mapStateToProps = (state) => {
+    return {
+        loginData: state.authReducer,
+    };
+};
+
+
+// Exports
+export default connect(mapStateToProps, null)(App);
