@@ -15,6 +15,6 @@ export default {
         },
     },
 
-    API_BASE_URL: "http://10.10.10.22:4321",
-    SOCKET_BASE_URL: "http://10.10.10.22:4321",
+    API_BASE_URL: "https://chatyuk-api.herokuapp.com/",
+    SOCKET_BASE_URL: "https://chatyuk-api.herokuapp.com/",
 };

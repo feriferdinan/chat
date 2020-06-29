@@ -1,10 +1,35 @@
-import React, { useContext } from 'react';
+import React from 'react';
+import { Alert } from 'react-native'
 import { Container, Header, Content, Button, ListItem, Text, Icon, Left, Body, Right, Switch } from 'native-base';
-// import { AuthContext } from '../../contexts'
-import { logout } from '../../redux/actions/authAction'
 import { connect } from 'react-redux'
-function SettingScreen({ navigation, loginAction }) {
-    // const { logout } = useContext(AuthContext);
+import { createAction } from '../../utils/createAction'
+import AsyncStorage from '@react-native-community/async-storage';
+function SettingScreen({ navigation, logout }) {
+
+
+
+    handleLogout = () => {
+        Alert.alert(
+            'Log out',
+            'You will be returned to the login screen.',
+            [
+
+                {
+                    text: 'Cancel',
+                    onPress: () => { },
+                    style: 'cancel'
+                },
+                {
+                    text: 'Log out', onPress: () => {
+                        AsyncStorage.clear().then(() => {
+                            logout()
+                        })
+                    }
+                }
+            ],
+            { cancelable: true }
+        );
+    }
 
     return (
         <Container>
@@ -22,7 +47,7 @@ function SettingScreen({ navigation, loginAction }) {
                         <Icon name="arrow-forward" />
                     </Right>
                 </ListItem>
-                <ListItem icon button={true} onPress={loginAction}>
+                <ListItem icon button={true} onPress={handleLogout}>
                     <Left>
                         <Button style={{ backgroundColor: "red" }}>
                             <Icon active name="ios-log-out" />
@@ -41,16 +66,10 @@ function SettingScreen({ navigation, loginAction }) {
 }
 
 
-const mapStateToProps = (state) => {
-    return {
-        loginData: state.authReducer,
-    };
-};
-
 const mapDispatchToProps = (dispatch) => {
     return {
-        loginAction: () => dispatch(logout()),
+        logout: () => dispatch(createAction("REMOVE_USER", null)),
     };
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(SettingScreen);
+export default connect(null, mapDispatchToProps)(SettingScreen);

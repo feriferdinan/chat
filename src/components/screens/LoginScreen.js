@@ -1,50 +1,53 @@
-import React, { useState, useContext, createRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, ToastAndroid } from 'react-native'
-import { AuthContext } from '../../contexts';
+import React, { useState, createRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, ToastAndroid, ScrollView } from 'react-native'
 import config from '../../config'
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { login } from '../../redux/actions/authAction'
 import { connect } from 'react-redux';
+import Axios from '../../utils/Axios'
+import { createAction } from '../../utils/createAction'
+import AsyncStorage from '@react-native-community/async-storage';
 
-const reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+const regemail = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
 const screenWidth = Math.round(Dimensions.get('window').width);
 const screenHeight = Math.round(Dimensions.get('window').height);
 
-function LoginScreen({ navigation, loginAction, loginData }) {
-    // const { login } = useContext(AuthContext);
-    const [email, setEmail] = useState('user2@gmail.com');
-    const [password, setPassword] = useState('123');
+function LoginScreen({ navigation, setUser }) {
+    secondTextInput = createRef()
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [icEye, setIcEye] = useState('visibility-off');
     const [showPassword, setShowPassword] = useState(true);
+    const [isLoading, setLoading] = useState(false);
+
     changePwdType = () => {
-        if (showPassword) {
-            setShowPassword(false)
-            setIcEye("visibility")
-            setPassword(password)
-        } else {
-            setShowPassword(true)
-            setIcEye("visibility-off")
-            setPassword(password)
-        }
+        setShowPassword(!showPassword)
+        setIcEye(showPassword ? "visibility" : "visibility-off")
+        setPassword(password)
     }
+
+    toast = text => ToastAndroid.showWithGravityAndOffset(text, ToastAndroid.LONG, ToastAndroid.BOTTOM, 0, 200);
+
     handleLogin = () => {
-        if (!email || !password) {
-            ToastAndroid.showWithGravityAndOffset(
-                "Email & Password is required!",
-                ToastAndroid.LONG,
-                ToastAndroid.BOTTOM,
-                0,
-                200
-            );
-        } else {
-            loginAction({ email, password })
-        }
+        if (!email || !password) return toast("Email or password cannot be empty!");
+        setLoading(true)
+        Axios.post(`auth/login`, {
+            email: email,
+            password: password
+        }).then(async res => {
+            setLoading(false)
+            await AsyncStorage.setItem("token", res.data.token)
+            setUser(res.data.data)
+        }).catch(err => {
+            setLoading(false)
+            if (err.response?.status <= 404) {
+                toast(err.response.data.message);
+            } else {
+                toast(err.message);
+            }
+        })
     }
-    console.log(loginData, 'loginData');
 
-    secondTextInput = createRef()
     return (
-
         <View style={styles.container}>
             <View style={styles.wrapperForm} >
                 <Text style={styles.title}>CHAT YUK</Text>
@@ -53,10 +56,9 @@ function LoginScreen({ navigation, loginAction, loginData }) {
                         value={email}
                         autoCompleteType='email'
                         keyboardType="email-address"
-                        placeholder="Masukan Email Anda"
+                        placeholder="Input your Email"
                         placeholderTextColor="grey"
                         returnKeyType={"next"}
-                        // autoFocus={true}
                         onSubmitEditing={() => secondTextInput.focus()}
                         onChangeText={(email) => setEmail(email)}
                     />
@@ -68,13 +70,13 @@ function LoginScreen({ navigation, loginAction, loginData }) {
                     />
                 </View>
                 {
-                    (reg.test(email) == 1 || email == "") ? null :
+                    (regemail.test(email) == 1 || email == "") ? null :
                         <Text style={{ color: 'red', alignSelf: "flex-start", paddingHorizontal: 46 }}>Email not valid!</Text>
                 }
                 <View style={[styles.wrapperInputPassword, styles.inputBox]} >
                     <TextInput
                         value={password}
-                        placeholder="Masukan Password Anda"
+                        placeholder="Input your Password"
                         secureTextEntry={showPassword}
                         ref={(input) => { secondTextInput = input; }}
                         returnKeyType={"go"}
@@ -96,13 +98,13 @@ function LoginScreen({ navigation, loginAction, loginData }) {
                         />
                     </TouchableOpacity>
                 </View>
-                <TouchableOpacity disabled={loginData.isLoading} activeOpacity={0.5} style={[styles.button, { backgroundColor: loginData.isLoading ? "#ccc" : config.BASE_COLOR }]} onPress={handleLogin}>
-                    <Text style={styles.buttonText}>{loginData.isLoading ? "Loading..." : "LOGIN"}</Text>
+                <TouchableOpacity disabled={isLoading} activeOpacity={0.5} style={[styles.button, { backgroundColor: isLoading ? "#ccc" : config.BASE_COLOR }]} onPress={handleLogin}>
+                    <Text style={styles.buttonText}>{isLoading ? "Loading..." : "LOGIN"}</Text>
                 </TouchableOpacity>
             </View>
             <View style={{ justifyContent: 'center', alignItems: 'center', position: "absolute", bottom: 20 }}>
                 <Text>Don't have an account yet?</Text>
-                <TouchableOpacity>
+                <TouchableOpacity disabled={isLoading}>
                     <Text
                         onPress={() => navigation.navigate('Register')}
                         style={{ color: config.BASE_COLOR, fontWeight: "bold" }} >SIGN UP NOW!</Text>
@@ -187,22 +189,12 @@ const styles = StyleSheet.create({
 });
 
 
-// Map State To Props (Redux Store Passes State To Component)
-const mapStateToProps = (state) => {
-    // Redux Store --> Component
-    return {
-        loginData: state.authReducer,
-    };
-};
-
 // Map Dispatch To Props (Dispatch Actions To Reducers. Reducers Then Modify The Data And Assign It To Your Props)
 const mapDispatchToProps = (dispatch) => {
-    // Action
     return {
-        // Login
-        loginAction: (props) => dispatch(login(props)),
+        setUser: data => dispatch(createAction("SET_USER", data))
     };
 };
 
 // Exports
-export default connect(mapStateToProps, mapDispatchToProps)(LoginScreen);
+export default connect(null, mapDispatchToProps)(LoginScreen);
