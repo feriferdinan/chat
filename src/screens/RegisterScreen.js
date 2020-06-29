@@ -1,10 +1,10 @@
 import React, { useState, createRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, ToastAndroid, ScrollView } from 'react-native'
-import config from '../../config'
+import config from '../config'
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { connect } from 'react-redux';
-import Axios from '../../utils/Axios'
-import { createAction } from '../../utils/createAction'
+import Axios from '../utils/Axios'
+import { createAction } from '../utils/createAction'
 import AsyncStorage from '@react-native-community/async-storage';
 
 const regemail = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;

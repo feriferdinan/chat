@@ -14,7 +14,7 @@ import IconE from 'react-native-vector-icons/Entypo';
 const MainStack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-import { HomeScreen, ChatScreen, SettingScreen, ContactListScreen } from '../components/screens';
+import { HomeScreen, ChatScreen, SettingScreen, ContactListScreen } from '../screens';
 import config from '../config'
 
 

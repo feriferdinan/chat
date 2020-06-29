@@ -5,7 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
 import { MainStackNavigator, AuthStackNavigator } from './navigators'
-import { SplashScreen } from './components/screens';
+import { SplashScreen } from './screens';
 import { ThemeContext } from './contexts'
 
 import { lightTheme } from './theme/light'
@@ -25,9 +25,11 @@ function App({ userData }) {
 
     useEffect(() => {
         if (userData) {
-            setTimeout(() => {
-                setLoad(false)
-            }, 100);
+            if (load) {
+                setTimeout(() => {
+                    setLoad(false)
+                }, 100);
+            }
         }
     }, []);
 

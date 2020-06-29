@@ -1,19 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, ToastAndroid } from "react-native";
+import { View } from "react-native";
 import { Container, Content, List, ListItem, Left, Body, Right, Thumbnail, Text, Badge } from 'native-base';
 import SocketIo from 'socket.io-client';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import IconFoundation from 'react-native-vector-icons/Foundation';
-import IconAnt from 'react-native-vector-icons/AntDesign';
-import IconFA5 from 'react-native-vector-icons/FontAwesome5';
-import IconFA from 'react-native-vector-icons/FontAwesome';
-import IconMCI from 'react-native-vector-icons/MaterialCommunityIcons';
-import IconE from 'react-native-vector-icons/Entypo';
-import config from '../../config';
+import config from '../config';
 import { connect } from 'react-redux'
-import Axios from '../../utils/Axios'
-import { createAction } from '../../utils/createAction'
+import Axios from '../utils/Axios'
+import { createAction } from '../utils/createAction'
+import formatDate from '../utils/formatDate'
+import Toast from '../components/Toast'
+
 let socket
+
 function HomeScreen({ navigation, userData, messageData, setMessage }) {
     const [isLoading, setLoading] = useState(false);
     useEffect(() => {
@@ -31,16 +28,17 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
             socket.emit("join", e._id);
         })
         socket.on("new message", (message) => {
-            messageData.data.map(el => {
-                if (el._id == message.room_id) {
-                    el.messages = [message, ...el.messages]
-                }
-            })
-            setMessage(messageData.data)
+            if (message.user._id != userData.data._id) {
+                messageData.data.map(el => {
+                    if (el._id == message.room_id) {
+                        el.messages = [message, ...el.messages]
+                    }
+                })
+                setMessage(messageData.data)
+            }
         });
     }, []);
 
-    toast = text => ToastAndroid.showWithGravityAndOffset(text, ToastAndroid.LONG, ToastAndroid.BOTTOM, 0, 200);
 
     getMessage = () => {
         Axios.get(`message`)
@@ -51,9 +49,9 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
             .catch(err => {
                 setLoading(false)
                 if (err.response?.status <= 404) {
-                    toast(err.response.data.message);
+                    Toast(err.response.data.message);
                 } else {
-                    toast(err.message);
+                    Toast(err.message);
                 }
             })
     }
@@ -64,7 +62,7 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
                 <List>
                     {
                         messageData.data.map((item, index) => {
-                            return (<MyListItem key={index} item={item} navigation={navigation} index={index} />)
+                            return (<ListChat key={index} item={item} navigation={navigation} index={index} userData={userData} />)
                         })
                     }
                 </List>
@@ -73,23 +71,39 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
     );
 }
 
-function MyListItem({ item, index, navigation }) {
+function ListChat({ item, index, navigation, userData }) {
+    let avatar, roomName
+    if (item.type) {
+        // isGroup
+        avatar = item?.avatar || "https://lh3.googleusercontent.com/proxy/ZYjs1CrEnp03V6323GZFNSKiOl5wAihFPrUouj6touxMlBmdT416WwMGTqopA0FPbyCdH5se6vQgoLJU1bJO7l0AtTqWTgzW3Idi34xvqZohlGHiLK2XwGB1nhC9DpOQ2zSRGesc"
+        roomName = item.name
+
+    } else {
+        // private
+        item.participants.map(e => {
+            if (e.user._id != userData.data._id) {
+                avatar = e.user?.avatar || "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+                roomName = e.user.name
+                // break;
+            }
+        })
+    }
     return (
         <ListItem avatar button={true} onPress={() => navigation.navigate("ChatScreen", {
             data: item
         })} key={index} >
             <Left button={true} onPress={() => alert("avatar")}>
-                <Thumbnail style={{ width: 50, height: 50 }} source={{ uri: 'https://lh3.googleusercontent.com/proxy/ZYjs1CrEnp03V6323GZFNSKiOl5wAihFPrUouj6touxMlBmdT416WwMGTqopA0FPbyCdH5se6vQgoLJU1bJO7l0AtTqWTgzW3Idi34xvqZohlGHiLK2XwGB1nhC9DpOQ2zSRGesc' }} />
+                <Thumbnail style={{ width: 50, height: 50 }} source={{ uri: avatar }} />
             </Left>
             <Body height={70} >
                 <View style={{ flexDirection: "row", alignItems: "center", }}>
-                    <Text style={{ fontWeight: "bold" }}>{item.name}</Text>
+                    <Text style={{ fontWeight: "bold" }}>{roomName}</Text>
                     {/* <IconE style={{ fontWeight: "500", left: -10 }} color="grey" name="sound-mute" /> */}
                 </View>
-                <Text >{item?.messages[0].user.name}: <Text note>{item?.messages[0].text}</Text></Text>
+                <Text >{item.type ? item?.messages[0].user.name + ": " : ""}<Text note>{item?.messages[0].text}</Text></Text>
             </Body>
             <Right >
-                <Text primary note>3:44 PM</Text>
+                <Text primary note>{formatDate(item?.messages[0].createdAt)}</Text>
                 {/* <Badge style={{ height: 20 }} primary>
                     <Text>1</Text>
                 </Badge> */}

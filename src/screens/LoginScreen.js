@@ -1,15 +1,17 @@
 import React, { useState, createRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, ToastAndroid, ScrollView } from 'react-native'
-import config from '../../config'
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, ScrollView } from 'react-native'
+import config from '../config'
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { connect } from 'react-redux';
-import Axios from '../../utils/Axios'
-import { createAction } from '../../utils/createAction'
+import Axios from '../utils/Axios'
+import { createAction } from '../utils/createAction'
 import AsyncStorage from '@react-native-community/async-storage';
+import Toast from '../components/Toast'
 
 const regemail = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
 const screenWidth = Math.round(Dimensions.get('window').width);
 const screenHeight = Math.round(Dimensions.get('window').height);
+
 
 function LoginScreen({ navigation, setUser }) {
     secondTextInput = createRef()
@@ -25,10 +27,8 @@ function LoginScreen({ navigation, setUser }) {
         setPassword(password)
     }
 
-    toast = text => ToastAndroid.showWithGravityAndOffset(text, ToastAndroid.LONG, ToastAndroid.BOTTOM, 0, 200);
-
     handleLogin = () => {
-        if (!email || !password) return toast("Email or password cannot be empty!");
+        if (!email || !password) return Toast("Email or password cannot be empty!");
         setLoading(true)
         Axios.post(`auth/login`, {
             email: email,
@@ -40,9 +40,9 @@ function LoginScreen({ navigation, setUser }) {
         }).catch(err => {
             setLoading(false)
             if (err.response?.status <= 404) {
-                toast(err.response.data.message);
+                Toast(err.response.data.message);
             } else {
-                toast(err.message);
+                Toast(err.message);
             }
         })
     }

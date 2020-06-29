@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert } from 'react-native'
 import { Container, Header, Content, Button, ListItem, Text, Icon, Left, Body, Right, Switch } from 'native-base';
 import { connect } from 'react-redux'
-import { createAction } from '../../utils/createAction'
+import { createAction } from '../utils/createAction'
 import AsyncStorage from '@react-native-community/async-storage';
 function SettingScreen({ navigation, logout }) {
 

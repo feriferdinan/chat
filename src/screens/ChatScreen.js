@@ -1,33 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-    SafeAreaView,
-    StyleSheet,
-    ScrollView,
     View,
-    Text,
-    StatusBar,
-    TouchableOpacity,
-    FlatList,
-    KeyboardAvoidingView,
-    Platform,
-    ToastAndroid
 } from 'react-native';
 import { GiftedChat } from 'react-native-gifted-chat'
 import SocketIo from 'socket.io-client';
-import config from '../../config';
+import config from '../config';
 import { connect } from 'react-redux'
-import Axios from '../../utils/Axios'
-import { createAction } from '../../utils/createAction'
+import Axios from '../utils/Axios'
+import { createAction } from '../utils/createAction'
+import Toast from '../components/Toast'
 
 let socket;
 
-
 function ChatScreen({ navigation, route, userData, messageData, setMessageRedux }) {
+    const roomProps = route.params.data
+    const willMount = useRef(true);
     const [messages, setMessage] = useState([])
     const [progress, setProgress] = useState(0);
-    const roomProps = route.params.data
-
-    useEffect(() => {
+    if (willMount.current) {
+        setMessage(roomProps.messages)
         socket = SocketIo.connect(config.SOCKET_BASE_URL, {
             transports: ["websocket"],
             query: {
@@ -35,20 +26,13 @@ function ChatScreen({ navigation, route, userData, messageData, setMessageRedux 
             },
             secure: true,
         });
-        socket.emit("join", roomProps._id);
-    }, [])
+        willMount.current = false;
+    }
 
-    useEffect(() => {
-        messageData.data.map(el => {
-            if (roomProps._id == el._id) {
-                setMessage(el.messages)
-            }
-        })
-    }, [messageData.data]);
 
     useEffect(() => {
         socket.on("new message", (message) => {
-            if (message.user_id !== userData.data._id) {
+            if (message.user._id != userData.data._id) {
                 setMessage(previousState => [message, ...previousState])
             }
         });
@@ -57,32 +41,27 @@ function ChatScreen({ navigation, route, userData, messageData, setMessageRedux 
         };
     }, [])
 
-
-
-    onSend = (message = []) => {
-        message[0].room_id = roomProps._id
-        message[0].user.name = userData.data.name
+    onSend = (message = {}) => {
+        message.room_id = roomProps._id
+        message.user.name = userData.data.name
         setMessage(previousState => [message, ...previousState])
         Axios.post(`message`, {
-            _id: message[0]._id,
-            room_id: message[0].room_id,
-            text: message[0].text
+            _id: message._id,
+            room_id: message.room_id,
+            text: message.text
+        }).then(res => {
+            socket.emit("send message", message);
+        }).catch(err => {
+            if (err.response?.status <= 404) {
+                Toast(err.response.data.message);
+            } else {
+                Toast(err.message);
+            }
         })
-            .then(async res => {
-                socket.emit("send message", message[0]);
-            })
-            .catch(err => {
-                if (err.response?.status <= 404) {
-                    toast(err.response.data.message);
-                } else {
-                    toast(err.message);
-                }
-            })
     }
 
-    toast = text => ToastAndroid.showWithGravityAndOffset(text, ToastAndroid.LONG, ToastAndroid.BOTTOM, 0, 200);
 
-    getMessage = () => {
+    getMessagePaginate = () => {
 
     }
 
@@ -90,7 +69,7 @@ function ChatScreen({ navigation, route, userData, messageData, setMessageRedux 
         <View style={{ flex: 1, backgroundColor: "white" }}>
             <GiftedChat
                 messages={messages}
-                onSend={message => onSend(message)}
+                onSend={message => onSend(message[0])}
                 scrollToBottom={true}
                 user={{
                     _id: userData.data._id
