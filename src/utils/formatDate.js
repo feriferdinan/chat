@@ -12,7 +12,7 @@ export default function formatDate(param = null) {
         year = dt.getFullYear();
 
     if (diffYears === 0 && diffDays === 0) {
-        return `${hours}.${mins}`;
+        return `${("0" + hours).slice(-2)}.${("0" + mins).slice(-2)}`;
     } else if (diffYears === 0 && diffDays === -1) {
         return "Yesterday";
     } else if (diffYears === 0 && (diffDays < -1 && diffDays > -7)) {

@@ -29,7 +29,7 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
         })
         socket.on("new message", (message) => {
             if (message.user._id != userData.data._id) {
-                messageData.data.map(el => {
+                messageData.data?.map(el => {
                     if (el._id == message.room_id) {
                         el.messages = [message, ...el.messages]
                     }
@@ -61,7 +61,7 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
             <Content>
                 <List>
                     {
-                        messageData.data.map((item, index) => {
+                        messageData.data?.map((item, index) => {
                             return (<ListChat key={index} item={item} navigation={navigation} index={index} userData={userData} />)
                         })
                     }
@@ -84,10 +84,13 @@ function ListChat({ item, index, navigation, userData }) {
             if (e.user._id != userData.data._id) {
                 avatar = e.user?.avatar || "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
                 roomName = e.user.name
-                // break;
             }
         })
     }
+
+    let countUnRead = 0
+    item.messages.map(m => !m.received ? countUnRead += 1 : null)
+
     return (
         <ListItem avatar button={true} onPress={() => navigation.navigate("ChatScreen", {
             data: item
@@ -104,9 +107,11 @@ function ListChat({ item, index, navigation, userData }) {
             </Body>
             <Right >
                 <Text primary note>{formatDate(item?.messages[0].createdAt)}</Text>
-                {/* <Badge style={{ height: 20 }} primary>
-                    <Text>1</Text>
-                </Badge> */}
+                {countUnRead > 0 &&
+                    (<Badge style={{ height: 20 }} primary>
+                        <Text>{countUnRead}</Text>
+                    </Badge>)
+                }
             </Right>
         </ListItem>
     )
