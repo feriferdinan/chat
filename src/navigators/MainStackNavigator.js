@@ -25,16 +25,14 @@ function MainTab() {
             screenOptions={({ route }) => ({
                 tabBarIcon: ({ focused, color, size }) => {
                     let iconName;
-                    size = 30;
+                    size = 25;
                     switch (route.name) {
                         case 'Chat':
-                            return <Ionicons name="ios-chatboxes" size={size} color={color} />;
+                            return <Ionicons name="md-chatbubbles-sharp" size={size} color={color} />;
                         case 'Setting':
                             return <Ionicons name="ios-settings" size={size} color={color} />;
                         case 'Contact':
-                            size = 32
-                            return <Ionicons name="md-contact" size={size} color={color} />;
-
+                            return <IconMCI name="contacts" size={size} color={color} />;
                     }
                 },
             })}

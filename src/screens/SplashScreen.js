@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text } from 'react-native'
+import Background from '../components/Background';
+import Title from '../components/Title';
 
 export default function SpashScreen() {
     return (
-        <View style={{ flex: 1, justifyContent: "center", alignContent: "center", alignItems: "center" }}>
-            <Text>CHAT YUK</Text>
-        </View>
+        <Background>
+            <Title>CHAT YUK</Title>
+        </Background>
     )
 }

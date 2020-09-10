@@ -1,9 +1,9 @@
 const initialState = {
     data: []
 }
-export default function messageReducer(state = initialState, action) {
+export default function contactReducer(state = initialState, action) {
     switch (action.type) {
-        case "SET_MESSAGE":
+        case "SET_CONTACT":
             return {
                 ...state,
                 data: action.payload

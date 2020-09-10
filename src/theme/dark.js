@@ -5,7 +5,7 @@ export const darkTheme = {
     ...DarkTheme,
     colors: {
         ...DarkTheme.colors,
-        background: 'black',
+        background: '#1c1c1c',
         primary: config.BASE_COLOR,
         text: 'white',
     },

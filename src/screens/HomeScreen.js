@@ -1,21 +1,43 @@
-import React, { useEffect, useState } from 'react';
-import { View } from "react-native";
-import { Container, Content, List, ListItem, Left, Body, Right, Thumbnail, Text, Badge } from 'native-base';
+import React, { useEffect, useState, useRef, } from 'react';
+import { Animated, StyleSheet, SafeAreaView } from "react-native";
 import SocketIo from 'socket.io-client';
 import config from '../config';
 import { connect } from 'react-redux'
 import Axios from '../utils/Axios'
 import { createAction } from '../utils/createAction'
-import formatDate from '../utils/formatDate'
 import Toast from '../components/Toast'
+import getCloser from '../utils/getCloser';
+import Header from '../components/Header'
+import ListChat from '../components/ListChat'
+import Entypo from 'react-native-vector-icons/Entypo'
+import IconIon from 'react-native-vector-icons/Ionicons'
 
+const { diffClamp } = Animated;
+const headerHeight = 58 * 2;
 let socket
 
 function HomeScreen({ navigation, userData, messageData, setMessage }) {
+
     const [isLoading, setLoading] = useState(false);
-    useEffect(() => {
-        getMessage()
-    }, [])
+
+    getMessage = () => {
+        setLoading(true)
+        Axios.get(`message`)
+            .then(async res => {
+                setLoading(false)
+                setMessage(res.data.data)
+            })
+            .catch(err => {
+                setLoading(false)
+                if (err.response?.status <= 404) {
+                    Toast(err.response.data.message);
+                } else {
+                    Toast(err.message);
+                }
+            })
+    }
+
+
     useEffect(() => {
         socket = SocketIo.connect(config.SOCKET_BASE_URL, {
             transports: ["websocket"],
@@ -37,85 +59,103 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
                 setMessage(messageData.data)
             }
         });
+        getMessage()
     }, []);
 
 
-    getMessage = () => {
-        Axios.get(`message`)
-            .then(async res => {
-                setLoading(false)
-                setMessage(res.data.data)
-            })
-            .catch(err => {
-                setLoading(false)
-                if (err.response?.status <= 404) {
-                    Toast(err.response.data.message);
-                } else {
-                    Toast(err.message);
-                }
-            })
-    }
+
+    const ref = useRef(null);
+
+    const scrollY = useRef(new Animated.Value(0));
+    const scrollYClamped = diffClamp(scrollY.current, 0, headerHeight);
+
+    const translateY = scrollYClamped.interpolate({
+        inputRange: [0, headerHeight],
+        outputRange: [0, -(headerHeight / 2)],
+    });
+
+    const translateYNumber = useRef();
+
+    translateY.addListener(({ value }) => {
+        translateYNumber.current = value;
+    });
+
+    const handleScroll = Animated.event(
+        [
+            {
+                nativeEvent: {
+                    contentOffset: { y: scrollY.current },
+                },
+            },
+        ],
+        {
+            useNativeDriver: true,
+        },
+    );
+
+    const handleSnap = ({ nativeEvent }) => {
+        const offsetY = nativeEvent.contentOffset.y;
+        if (
+            !(
+                translateYNumber.current === 0 ||
+                translateYNumber.current === -headerHeight / 2
+            )
+        ) {
+            if (ref.current) {
+                ref.current.scrollToOffset({
+                    offset:
+                        getCloser(translateYNumber.current, -headerHeight / 2, 0) ===
+                            -headerHeight / 2
+                            ? offsetY + headerHeight / 2
+                            : offsetY - headerHeight / 2,
+                });
+            }
+        }
+    };
 
     return (
-        <Container background="">
-            <Content>
-                <List>
-                    {
-                        messageData.data?.map((item, index) => {
-                            return (<ListChat key={index} item={item} navigation={navigation} index={index} userData={userData} />)
-                        })
-                    }
-                </List>
-            </Content>
-        </Container >
+        <SafeAreaView style={styles.container}>
+            <Animated.View style={[styles.header, { transform: [{ translateY }] }]}>
+                <Header
+                    {...{ headerHeight }}
+                    title={isLoading ? "Updating..." : "Chat"}
+                    headerLeft={<Entypo name="menu" size={25} color={"#fff"} />}
+                    headerRight={<IconIon name="create-outline" size={25} color={"#fff"} />} />
+            </Animated.View>
+            <Animated.FlatList
+                scrollEventThrottle={16}
+                contentContainerStyle={{ paddingTop: headerHeight }}
+                onScroll={handleScroll}
+                ref={ref}
+                onMomentumScrollEnd={handleSnap}
+                data={messageData.data}
+                renderItem={({ item, index
+                }) => <ListChat key={index} item={item} navigation={navigation} index={index} userData={userData} />}
+                keyExtractor={(item, index) => `list-item-${index}`}
+            />
+        </SafeAreaView>
     );
 }
 
-function ListChat({ item, index, navigation, userData }) {
-    let avatar, roomName
-    if (item.type) {
-        // isGroup
-        avatar = item?.avatar || "https://lh3.googleusercontent.com/proxy/ZYjs1CrEnp03V6323GZFNSKiOl5wAihFPrUouj6touxMlBmdT416WwMGTqopA0FPbyCdH5se6vQgoLJU1bJO7l0AtTqWTgzW3Idi34xvqZohlGHiLK2XwGB1nhC9DpOQ2zSRGesc"
-        roomName = item.name
-
-    } else {
-        // private
-        item.participants.map(e => {
-            if (e.user._id != userData.data._id) {
-                avatar = e.user?.avatar || "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
-                roomName = e.user.name
-            }
-        })
+const styles = StyleSheet.create({
+    header: {
+        position: 'absolute',
+        backgroundColor: '#1c1c1c',
+        left: 0,
+        right: 0,
+        width: '100%',
+        zIndex: 1,
+    },
+    subHeader: {
+        height: headerHeight / 2,
+        width: '100%',
+        paddingHorizontal: 10,
+    },
+    container: {
+        flex: 1,
     }
+})
 
-    let countUnRead = 0
-    item.messages.map(m => !m.received ? countUnRead += 1 : null)
-
-    return (
-        <ListItem avatar button={true} onPress={() => navigation.navigate("ChatScreen", {
-            data: item
-        })} key={index} >
-            <Left button={true} onPress={() => alert("avatar")}>
-                <Thumbnail style={{ width: 50, height: 50 }} source={{ uri: avatar }} />
-            </Left>
-            <Body height={70} >
-                <View style={{ flexDirection: "row", alignItems: "center", }}>
-                    <Text style={{ fontWeight: "bold" }}>{roomName}</Text>
-                    {/* <IconE style={{ fontWeight: "500", left: -10 }} color="grey" name="sound-mute" /> */}
-                </View>
-                <Text >{item.type ? item?.messages[0].user.name + ": " : ""}<Text note>{item?.messages[0].text}</Text></Text>
-            </Body>
-            <Right >
-                <Text primary note>{formatDate(item?.messages[0].createdAt)}</Text>
-                {countUnRead > 0 &&
-                    (<Badge style={{ height: 20 }} primary>
-                        <Text>{countUnRead}</Text>
-                    </Badge>)
-                }
-            </Right>
-        </ListItem>
-    )
-}
 
 const mapStateToProps = (state) => {
     return {

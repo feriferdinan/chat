@@ -1,23 +1,49 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import {
     View,
+    Image
 } from 'react-native';
+import BackButton from '../components/BackButton'
 import { GiftedChat } from 'react-native-gifted-chat'
 import SocketIo from 'socket.io-client';
 import config from '../config';
 import { connect } from 'react-redux'
 import Axios from '../utils/Axios'
+import { theme } from '../utils/theme'
 import { createAction } from '../utils/createAction'
 import Toast from '../components/Toast'
 import Sound from 'react-native-sound'
 
 let socket;
 
+function ActionBarIcon({ roomProps, navigation }) {
+    return (
+        <Image
+            source={{ uri: roomProps.avatar }}
+            style={{ width: 40, height: 40, borderRadius: 40 / 2, marginRight: 16 }} />
+    );
+}
+
+
 function ChatScreen({ navigation, route, userData, messageData, setMessageRedux }) {
     const roomProps = route.params.data
     const willMount = useRef(true);
     const [messages, setMessage] = useState([])
     const [progress, setProgress] = useState(0);
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            title: roomProps?.name,
+            headerRight: props => <ActionBarIcon {...props} roomProps={roomProps} navigation={navigation} />,
+            headerStyle: {
+                backgroundColor: theme.colors.primary,
+                elevation: 0, // remove shadow on Android
+                shadowOpacity: 0 // remove shadow on iOS
+            },
+            headerTintColor: theme.colors.white,
+        });
+    }, [navigation]);
+
     sound = new Sound('new_message_on_screen.mp3');
     playSound = () => {
         sound.play()
@@ -32,6 +58,12 @@ function ChatScreen({ navigation, route, userData, messageData, setMessageRedux 
             }
         })
         setMessage(roomProps.messages)
+
+        willMount.current = false;
+    }
+
+
+    useEffect(() => {
         socket = SocketIo.connect(config.SOCKET_BASE_URL, {
             transports: ["websocket"],
             query: {
@@ -40,11 +72,6 @@ function ChatScreen({ navigation, route, userData, messageData, setMessageRedux 
             secure: true,
         });
         socket.emit("join", roomProps._id);
-        willMount.current = false;
-    }
-
-
-    useEffect(() => {
         socket.on("new message", (message) => {
             if (message.user._id != userData.data._id) {
                 setMessage(previousState => [message, ...previousState])
@@ -64,11 +91,7 @@ function ChatScreen({ navigation, route, userData, messageData, setMessageRedux 
         }
         message.pending = true
         setMessage(previousState => [message, ...previousState])
-        Axios.post(`message`, {
-            _id: message._id,
-            room_id: message.room_id,
-            text: message.text
-        }).then(res => {
+        Axios.post(`message`, message).then(res => {
             message.sent = true
             message.pending = false
             message.received = false

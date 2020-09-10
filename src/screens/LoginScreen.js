@@ -1,38 +1,44 @@
-import React, { useState, createRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, TextInput, ScrollView } from 'react-native'
-import config from '../config'
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { connect } from 'react-redux';
-import Axios from '../utils/Axios'
+import React, { useState, useEffect } from 'react';
+// import component
+import { TouchableOpacity, StyleSheet, Text, View, StatusBar, Linking, Keyboard } from 'react-native';
+import Background from '../components/Background';
+import Logo from '../components/Logo';
+import Button from '../components/Button';
+import TextInput from '../components/TextInput';
+import Title from '../components/Title';
+// import utils
+import { theme } from '../utils/theme';
 import { createAction } from '../utils/createAction'
-import AsyncStorage from '@react-native-community/async-storage';
-import Toast from '../components/Toast'
+import { emailValidator, passwordValidator } from '../utils/validators';
+import Axios from '../utils/Axios'
 
-const regemail = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-const screenWidth = Math.round(Dimensions.get('window').width);
-const screenHeight = Math.round(Dimensions.get('window').height);
+// import dependencies
+import { connect } from 'react-redux';
+import AsyncStorage from '@react-native-community/async-storage'
+// import { showMessage } from 'react-native-flash-message';
 
 
-function LoginScreen({ navigation, setUser }) {
-    secondTextInput = createRef()
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [icEye, setIcEye] = useState('visibility-off');
-    const [showPassword, setShowPassword] = useState(true);
+
+const LoginScreen = ({ navigation, setUser }) => {
+
+    const [email, setEmail] = useState({ value: '', error: '' });
+    const [password, setPassword] = useState({ value: '', error: '' });
     const [isLoading, setLoading] = useState(false);
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
-    changePwdType = () => {
-        setShowPassword(!showPassword)
-        setIcEye(showPassword ? "visibility" : "visibility-off")
-        setPassword(password)
-    }
+    const _onLoginPressed = () => {
+        const emailError = emailValidator(email.value);
+        const passwordError = passwordValidator(password.value);
 
-    handleLogin = () => {
-        if (!email || !password) return Toast("Email or password cannot be empty!");
+        if (emailError || passwordError) {
+            setEmail({ ...email, error: emailError });
+            setPassword({ ...password, error: passwordError });
+            return;
+        }
         setLoading(true)
         Axios.post(`auth/login`, {
-            email: email,
-            password: password
+            email: email.value,
+            password: password.value
         }).then(async res => {
             setLoading(false)
             await AsyncStorage.setItem("token", res.data.token)
@@ -45,149 +51,81 @@ function LoginScreen({ navigation, setUser }) {
                 Toast(err.message);
             }
         })
-    }
+
+
+    };
+
 
     return (
-        <View style={styles.container}>
-            <View style={styles.wrapperForm} >
-                <Text style={styles.title}>CHAT YUK</Text>
-                <View style={styles.inputBox} >
-                    <TextInput
-                        value={email}
-                        autoCompleteType='email'
-                        keyboardType="email-address"
-                        placeholder="Input your Email"
-                        placeholderTextColor="grey"
-                        returnKeyType={"next"}
-                        onSubmitEditing={() => secondTextInput.focus()}
-                        onChangeText={(email) => setEmail(email)}
-                    />
-                    <Icon
-                        style={{ position: "absolute", left: 12, top: 15 }}
-                        name="email"
-                        size={16}
-                        color="rgba(0,0,0,0.5)"
-                    />
-                </View>
-                {
-                    (regemail.test(email) == 1 || email == "") ? null :
-                        <Text style={{ color: 'red', alignSelf: "flex-start", paddingHorizontal: 46 }}>Email not valid!</Text>
-                }
-                <View style={[styles.wrapperInputPassword, styles.inputBox]} >
-                    <TextInput
-                        value={password}
-                        placeholder="Input your Password"
-                        secureTextEntry={showPassword}
-                        ref={(input) => { secondTextInput = input; }}
-                        returnKeyType={"go"}
-                        placeholderTextColor="grey"
-                        onChangeText={(text) => setPassword(text)}
-                    />
-                    <Icon
-                        style={{ position: "absolute", left: 12, top: 15 }}
-                        name="lock"
-                        size={16}
-                        color="rgba(0,0,0,0.5)"
-                    />
-                    <TouchableOpacity activeOpacity={0.5} style={styles.icon} onPress={changePwdType}>
-                        <Icon
-                            name={icEye}
-                            size={25}
-                            color={"#aeaeae"}
+        // <View style={{ flex: 1 }}>
+        <Background>
 
-                        />
-                    </TouchableOpacity>
-                </View>
-                <TouchableOpacity disabled={isLoading} activeOpacity={0.5} style={[styles.button, { backgroundColor: isLoading ? "#ccc" : config.BASE_COLOR }]} onPress={handleLogin}>
-                    <Text style={styles.buttonText}>{isLoading ? "Loading..." : "LOGIN"}</Text>
+            <Title>CHAT YUK</Title>
+
+            <TextInput
+                label="Email"
+                returnKeyType="next"
+                value={email.value}
+                onChangeText={text => setEmail({ value: text, error: '' })}
+                error={!!email.error}
+                errorText={email.error}
+                autoCapitalize="none"
+                autoCompleteType="email"
+                textContentType="emailAddress"
+                keyboardType="email-address"
+            />
+
+            <TextInput
+                label="Password"
+                returnKeyType="done"
+                value={password.value}
+                onChangeText={text => setPassword({ value: text, error: '' })}
+                error={!!password.error}
+                errorText={password.error}
+                secureTextEntry
+            />
+
+            <View style={styles.forgotPassword}>
+                <TouchableOpacity onPress={() => navigation.navigate('ForgotPasswordScreen')}>
+                    <Text style={styles.label}>Forgot your password?</Text>
                 </TouchableOpacity>
             </View>
-            <View style={{ justifyContent: 'center', alignItems: 'center', position: "absolute", bottom: 20 }}>
-                <Text>Don't have an account yet?</Text>
-                <TouchableOpacity disabled={isLoading}>
-                    <Text
-                        onPress={() => navigation.navigate('Register')}
-                        style={{ color: config.BASE_COLOR, fontWeight: "bold" }} >SIGN UP NOW!</Text>
+
+            <Button mode="contained" loading={isLoading} disabled={isLoading} onPress={_onLoginPressed}>
+                Login
+      </Button>
+
+            <View style={styles.row}>
+                <Text style={styles.label}>Don’t have an account? </Text>
+                <TouchableOpacity onPress={() => navigation.navigate('RegisterScreen')}>
+                    <Text style={styles.link}>Sign up</Text>
                 </TouchableOpacity>
             </View>
-        </View>
-    )
-}
+
+        </Background>
+
+        // </View>
+    );
+};
 
 const styles = StyleSheet.create({
-    container: {
-        backgroundColor: "#fff",
-        flexGrow: 1,
-        justifyContent: 'center',
-        alignItems: 'center'
+    forgotPassword: {
+        width: '100%',
+        alignItems: 'flex-end',
+        marginBottom: 24,
     },
-    title: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: config.BASE_COLOR,
-        margin: 10,
-
+    row: {
+        flexDirection: 'row',
+        marginTop: 4,
     },
-    inputBox: {
-        width: screenWidth - screenWidth * 13 / 100,
-        borderRadius: 25,
-        paddingHorizontal: 16,
-        paddingLeft: 30,
-        fontSize: 16,
-        color: 'grey',
-        marginVertical: 10,
-        backgroundColor: "#ffff",
-        borderColor: config.BASE_COLOR,
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.32,
-        shadowRadius: 5.46,
-        elevation: 9,
+    label: {
+        color: theme.colors.secondary,
     },
-    wrapperForm: {
-        width: "100%",
-        backgroundColor: 'rgba(86,130,163,0)',
-        flexDirection: "column",
-        alignItems: "center",
-        borderRadius: 20,
-        padding: 10,
-
+    link: {
+        fontWeight: 'bold',
+        color: theme.colors.primary,
     },
-    wrapperInputPassword: {
-        flexDirection: "row",
-    },
-    icon: {
-        position: 'absolute',
-        top: 11,
-        right: 15
-    },
-    button: {
-        width: "90%",
-        backgroundColor: config.BASE_COLOR,
-        borderRadius: 25,
-        marginVertical: 10,
-        paddingVertical: 13,
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.22,
-        shadowRadius: 2.22,
-        elevation: 3,
-    },
-    buttonText: {
-        fontSize: 16,
-        fontWeight: '500',
-        color: '#ffffff',
-        textAlign: 'center'
-    }
-
 });
-
 
 // Map Dispatch To Props (Dispatch Actions To Reducers. Reducers Then Modify The Data And Assign It To Your Props)
 const mapDispatchToProps = (dispatch) => {

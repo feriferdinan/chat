@@ -45,7 +45,8 @@ function App({ userData }) {
     return (
         <ThemeContext.Provider value={switchTheme}>
             <NavigationContainer theme={isDarkMode ? darkTheme : lightTheme}>
-                <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+                {/* <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} /> */}
+                <StatusBar backgroundColor="#1c1c1c" barStyle="light-content" />
                 <RootStack.Navigator
                     screenOptions={{
                         headerShown: false,

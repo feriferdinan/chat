@@ -1,5 +1,5 @@
 export default {
-    BASE_COLOR: '#1F93F4',
+    BASE_COLOR: '#1c1c1c',
     BASE_COLOR_GRADIENT: '#1F93F4',
     styleConstants: {
         rowHeight: 50,
