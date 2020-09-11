@@ -1,43 +1,17 @@
-import React, { useEffect, useRef } from 'react';
-import { View, PermissionsAndroid, SafeAreaView, StyleSheet, Animated, TouchableOpacity } from 'react-native';
-import Contacts from 'react-native-contacts';
-import { List, Avatar, Divider, Text } from 'react-native-paper';
+import React, { useRef } from 'react';
+import { View, SafeAreaView, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { connect } from 'react-redux'
 import { createAction } from '../utils/createAction'
 import IconAnt from 'react-native-vector-icons/AntDesign'
-import Axios from '../utils/Axios'
 import getCloser from '../utils/getCloser';
 import Header from '../components/Header'
+import Contact from '../components/container/Contact';
 
 
 const { diffClamp } = Animated;
 const headerHeight = 58 * 2;
 
-function ContactListScreen({ navigation, setMyContact, myContacts, userData }) {
-
-    checkContact = phone_number => Axios.post(`user/check`, { phone_number })
-        .then(res => {
-            setMyContact(res.data.data)
-        })
-        .catch(err => console.log(err))
-
-    getContact = () => PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.WRITE_CONTACTS,
-        PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
-    ]).then(() => {
-        Contacts.getAll((err, contacts) => {
-            if (err === "denied") {
-                console.log("permissionDenied");
-            } else {
-                const phoneNumbers = contacts.map(c => c.phoneNumbers.map(p => p.number)).flat().filter(f => f != userData.data.phone_number)
-                checkContact(phoneNumbers)
-            }
-        });
-    });
-
-    useEffect(() => {
-        getContact()
-    }, []);
+function ContactListScreen({ }) {
 
     const ref = useRef(null);
 
@@ -99,25 +73,11 @@ function ContactListScreen({ navigation, setMyContact, myContacts, userData }) {
                     headerLeft={<View style={{ width: 25 }}></View>}
                     headerRight={<TouchableOpacity onPress={() => alert("add contact")}><IconAnt name="plus" size={25} color={"#fff"} /></TouchableOpacity>} />
             </Animated.View>
-            <Animated.FlatList
-                scrollEventThrottle={16}
-                contentContainerStyle={{ paddingTop: headerHeight }}
-                onScroll={handleScroll}
+            <Contact
                 ref={ref}
-                onMomentumScrollEnd={handleSnap}
-                data={myContacts.data}
-                renderItem={({ item, index }) =>
-                    <>
-                        <List.Item
-                            onPress={() => alert("ok")}
-                            key={index}
-                            title={item.name}
-                            description={"online"}
-                            left={props => item.avatar ? < Avatar.Image size={40} source={{ uri: item.avatar }} /> : <Avatar.Text size={40} label={item.name} />}
-                        />
-                        <Divider />
-                    </>}
-                keyExtractor={(item, index) => `list-item-${index}`}
+                handleScroll={handleScroll}
+                handleSnap={handleSnap}
+                headerHeight={headerHeight}
             />
         </SafeAreaView>
     );

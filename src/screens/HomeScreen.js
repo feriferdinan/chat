@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, } from 'react';
-import { Animated, StyleSheet, SafeAreaView } from "react-native";
+import { Animated, StyleSheet, SafeAreaView, View, Text, TouchableOpacity, Dimensions } from "react-native";
 import SocketIo from 'socket.io-client';
 import config from '../config';
 import { connect } from 'react-redux'
@@ -11,6 +11,9 @@ import Header from '../components/Header'
 import ListChat from '../components/ListChat'
 import Entypo from 'react-native-vector-icons/Entypo'
 import IconIon from 'react-native-vector-icons/Ionicons'
+import { Modalize } from 'react-native-modalize';
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window")
+import { getStatusBarHeight } from 'react-native-status-bar-height';
 
 const { diffClamp } = Animated;
 const headerHeight = 58 * 2;
@@ -19,6 +22,9 @@ let socket
 function HomeScreen({ navigation, userData, messageData, setMessage }) {
 
     const [isLoading, setLoading] = useState(false);
+
+    const modalizeRef = useRef(null);
+
 
     getMessage = () => {
         setLoading(true)
@@ -120,7 +126,7 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
                     {...{ headerHeight }}
                     title={isLoading ? "Updating..." : "Chat"}
                     headerLeft={<Entypo name="menu" size={25} color={"#fff"} />}
-                    headerRight={<IconIon name="create-outline" size={25} color={"#fff"} />} />
+                    headerRight={<TouchableOpacity onPress={() => modalizeRef.current?.open()}><IconIon name="create-outline" size={25} color={"#fff"} /></TouchableOpacity>} />
             </Animated.View>
             <Animated.FlatList
                 scrollEventThrottle={16}
@@ -133,6 +139,25 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
                 }) => <ListChat key={index} item={item} navigation={navigation} index={index} userData={userData} />}
                 keyExtractor={(item, index) => `list-item-${index}`}
             />
+
+            <Modalize
+                ref={modalizeRef}
+                scrollViewProps={{ showsVerticalScrollIndicator: false }}
+                // snapPoint={300}
+                modalHeight={SCREEN_HEIGHT - 70}
+                HeaderComponent={
+                    <Animated.View style={[styles.header, { transform: [{ translateY }] }]}>
+                        <Header
+                            {...{ headerHeight }}
+                            title={"New Chat"}
+                            headerLeft={<Text>Cancel</Text>}
+                            headerRight={<View></View>} />
+                    </Animated.View>
+                }
+                withHandle={false}
+            >
+                <Text>TES</Text>
+            </Modalize>
         </SafeAreaView>
     );
 }
