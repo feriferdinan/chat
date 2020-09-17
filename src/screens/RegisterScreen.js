@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Background from '../components/Background';
 import Logo from '../components/Logo';
 import Title from '../components/Title';
+import Toast from '../components/Toast';
 import Button from '../components/Button';
 import TextInput from '../components/TextInput';
 import BackButton from '../components/BackButton';
@@ -13,6 +14,7 @@ import {
     nameValidator,
 } from '../utils/validators';
 import { connect } from 'react-redux';
+import Axios from '../utils/Axios'
 
 
 const RegisterScreen = ({ navigation }) => {
@@ -49,9 +51,9 @@ const RegisterScreen = ({ navigation }) => {
         }).catch(err => {
             setLoading(false)
             if (err.response?.status <= 404) {
-                toast(err.response.data.message);
+                Toast(err.response.data.message);
             } else {
-                toast(err.message);
+                Toast(err.message);
             }
         })
     };
@@ -105,7 +107,7 @@ const RegisterScreen = ({ navigation }) => {
                 secureTextEntry
             />
 
-            <Button mode="contained" loading={isLoading} onPress={_onSignUpPressed} style={styles.button}>
+            <Button mode="contained" loading={isLoading} disabled={isLoading} onPress={_onSignUpPressed} style={styles.button}>
                 Sign Up
             </Button>
 

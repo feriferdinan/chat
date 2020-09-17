@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import {
     View,
-    Image
+    Image,
+    ActivityIndicator
 } from 'react-native';
 import BackButton from '../components/BackButton'
 import { GiftedChat } from 'react-native-gifted-chat'
@@ -16,7 +17,7 @@ import Sound from 'react-native-sound'
 
 let socket;
 
-function ActionBarIcon({ roomProps, navigation }) {
+function ActionBarIcon({ roomProps }) {
     return (
         <Image
             source={{ uri: roomProps.avatar }}
@@ -25,16 +26,18 @@ function ActionBarIcon({ roomProps, navigation }) {
 }
 
 
-function ChatScreen({ navigation, route, userData, messageData, setMessageRedux }) {
+function ChatScreen({ navigation, route, userData }) {
     const roomProps = route.params.data
     const willMount = useRef(true);
     const [messages, setMessage] = useState([])
+    const [nextPage, setNextPage] = useState(2)
     const [progress, setProgress] = useState(0);
+    const [isLoading, setLoading] = useState(false);
 
     useLayoutEffect(() => {
         navigation.setOptions({
             title: roomProps?.name,
-            headerRight: props => <ActionBarIcon {...props} roomProps={roomProps} navigation={navigation} />,
+            headerRight: props => <ActionBarIcon {...{ roomProps, navigation }} />,
             headerStyle: {
                 backgroundColor: theme.colors.primary,
                 elevation: 0, // remove shadow on Android
@@ -44,7 +47,7 @@ function ChatScreen({ navigation, route, userData, messageData, setMessageRedux 
         });
     }, [navigation]);
 
-    sound = new Sound('new_message_on_screen.mp3');
+    let sound = new Sound('new_message_on_screen.mp3');
     playSound = () => {
         sound.play()
     }
@@ -73,10 +76,8 @@ function ChatScreen({ navigation, route, userData, messageData, setMessageRedux 
         });
         socket.emit("join", roomProps._id);
         socket.on("new message", (message) => {
-            if (message.user._id != userData.data._id) {
+            if (message.user._id != userData.data._id)
                 setMessage(previousState => [message, ...previousState])
-                playSound()
-            }
         });
         return () => {
             setProgress(0);
@@ -86,9 +87,8 @@ function ChatScreen({ navigation, route, userData, messageData, setMessageRedux 
     onSend = (message = {}) => {
         message.room_id = roomProps._id
         message.user.name = userData.data.name
-        if (userData.data.avatar) {
+        if (userData.data.avatar)
             message.user.avatar = userData.data.avatar
-        }
         message.pending = true
         setMessage(previousState => [message, ...previousState])
         Axios.post(`message`, message).then(res => {
@@ -96,12 +96,7 @@ function ChatScreen({ navigation, route, userData, messageData, setMessageRedux 
             message.pending = false
             message.received = false
             socket.emit("send message", message);
-            messageData.data.map(el => {
-                if (el._id == message.room_id) {
-                    el.messages = [message, ...el.messages]
-                }
-            })
-            setMessageRedux(messageData.data)
+            setNewMessage(message)
         }).catch(err => {
             if (err.response?.status <= 404) {
                 Toast(err.response.data.message);
@@ -112,18 +107,49 @@ function ChatScreen({ navigation, route, userData, messageData, setMessageRedux 
     }
 
 
-    getMessagePaginate = () => {
-
+    loadMoreMessage = () => {
+        setLoading(true)
+        Axios.get(`message/byroom?room_id=${roomProps._id}&page=${nextPage}&pageSize=25`)
+            .then(res => {
+                let newMessages = res.data.data
+                console.log(newMessages);
+                console.log(nextPage, 'nextPage');
+                setLoading(false)
+                if (newMessages.length !== 0) {
+                    setMessage(previousState => [...newMessages, ...previousState])
+                    setNextPage(nextPage => nextPage + 1)
+                }
+            }).catch(err => {
+                console.log(err, "err");
+                setLoading(false)
+                if (err.response?.status <= 404) {
+                    Toast(err.response.data.message);
+                } else {
+                    Toast(err.message);
+                }
+            })
     }
+
+    isCloseToTop = ({ layoutMeasurement, contentOffset, contentSize }) => {
+        const paddingToTop = 80;
+        return contentSize.height - layoutMeasurement.height - paddingToTop <= contentOffset.y;
+    }
+
+    console.log(messages, 'messages');
 
     return (
         <View style={{ flex: 1, backgroundColor: "white" }}>
             <GiftedChat
+                renderLoading={() => <ActivityIndicator animating={isLoading} size="large" color="#0000ff" />}
                 messages={messages}
                 onSend={message => onSend(message[0])}
                 scrollToBottom={true}
                 user={{
                     _id: userData.data._id
+                }}
+                listViewProps={{
+                    scrollEventThrottle: 400,
+                    onScroll: ({ nativeEvent }) => { if (isCloseToTop(nativeEvent)) loadMoreMessage(); }
                 }}
             />
         </View>
@@ -141,7 +167,7 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
     return {
         setUser: data => dispatch(createAction("SET_USER", data)),
-        setMessageRedux: data => dispatch(createAction("SET_MESSAGE", data)),
+        setNewMessage: data => dispatch(createAction("SET_NEW_MESSAGE", data)),
     };
 };
 

@@ -26,11 +26,11 @@ function ListChat({ item, index, navigation, userData }) {
         <>
             <List.Item
                 onPress={() => navigation.navigate("ChatScreen", { data: item })}
-                key={index}
+                key={index.toString()}
                 title={roomName}
-                description={`${item.type ? item?.messages[0].user.name + ": " : ""}${item?.messages[0].text}`}
+                description={`${item.type && item?.messages.length !== 0 ? item?.messages[0]?.user.name + ": " : ""}${item?.messages.length !== 0 ? item?.messages[0]?.text : " "} `}
                 left={props => avatar ? < Avatar.Image size={40} source={{ uri: avatar }} /> : <Avatar.Text size={40} label={roomName} />}
-                right={props => <Text>{formatDate(item?.messages[0].createdAt)}</Text>}
+                right={props => <Text>{formatDate(item?.messages[0]?.createdAt)}</Text>}
             />
             <Divider />
         </>

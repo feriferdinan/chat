@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, forwardRef } from 'react';
 import { PermissionsAndroid, Animated } from 'react-native';
 import Contacts from 'react-native-contacts';
 import { connect } from 'react-redux'
@@ -6,7 +6,7 @@ import { createAction } from '../../utils/createAction'
 import Axios from '../../utils/Axios'
 import ListContact from '../presentation/ListContact';
 
-function Contact({ navigation, setMyContact, myContacts, userData, handleScroll, handleSnap, headerHeight }, props) {
+const Contact = forwardRef(({ navigation, setMyContact, myContacts, userData, handleScroll, handleSnap, headerHeight, contactRef, ...props }, ref) => {
 
     checkContact = phone_number => Axios.post(`user/check`, { phone_number })
         .then(res => {
@@ -17,16 +17,15 @@ function Contact({ navigation, setMyContact, myContacts, userData, handleScroll,
     getContact = () => PermissionsAndroid.requestMultiple([
         PermissionsAndroid.PERMISSIONS.WRITE_CONTACTS,
         PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
-    ]).then(() => {
-        Contacts.getAll((err, contacts) => {
-            if (err === "denied") {
-                console.log("permissionDenied");
-            } else {
-                const phoneNumbers = contacts.map(c => c.phoneNumbers.map(p => p.number)).flat().filter(f => f != userData.data.phone_number)
-                checkContact(phoneNumbers)
-            }
-        });
-    });
+    ]).then(() => Contacts.getAll((err, contacts) => {
+        if (err === "denied") {
+            console.log("permissionDenied");
+        } else {
+            const phoneNumbers = contacts.map(c => c.phoneNumbers.map(p => p.number)).flat().filter(f => f != userData.data.phone_number)
+            checkContact(phoneNumbers)
+        }
+    })
+    );
 
     useEffect(() => {
         getContact()
@@ -35,16 +34,16 @@ function Contact({ navigation, setMyContact, myContacts, userData, handleScroll,
     return (
         <Animated.FlatList
             scrollEventThrottle={16}
-            contentContainerStyle={{ paddingTop: headerHeight }}
             onScroll={handleScroll}
             onMomentumScrollEnd={handleSnap}
             data={myContacts.data}
             renderItem={ListContact}
-            keyExtractor={(item, index) => `list-item-${index}`}
+            keyExtractor={(item, index) => item._id}
+            ref={contactRef}
             {...props}
         />
     );
-}
+})
 
 const mapStateToProps = state => {
     return {

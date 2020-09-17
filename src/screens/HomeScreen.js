@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, } from 'react';
-import { Animated, StyleSheet, SafeAreaView, View, Text, TouchableOpacity, Dimensions } from "react-native";
+import { Animated, StyleSheet, SafeAreaView, View, Text, TouchableOpacity, Dimensions, Keyboard } from "react-native";
 import SocketIo from 'socket.io-client';
 import config from '../config';
 import { connect } from 'react-redux'
@@ -14,16 +14,21 @@ import IconIon from 'react-native-vector-icons/Ionicons'
 import { Modalize } from 'react-native-modalize';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window")
 import { getStatusBarHeight } from 'react-native-status-bar-height';
+import Contact from '../components/container/Contact';
+import { Portal } from "react-native-paper";
+import Search from '../components/Search';
 
 const { diffClamp } = Animated;
 const headerHeight = 58 * 2;
 let socket
 
-function HomeScreen({ navigation, userData, messageData, setMessage }) {
+function HomeScreen({ navigation, userData, messageData, setMessages, setNewMessage }) {
 
     const [isLoading, setLoading] = useState(false);
+    const [isModalOpen, setisModalOpen] = useState(false);
 
     const modalizeRef = useRef(null);
+    const contactRef = useRef(null);
 
 
     getMessage = () => {
@@ -31,7 +36,7 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
         Axios.get(`message`)
             .then(async res => {
                 setLoading(false)
-                setMessage(res.data.data)
+                setMessages(res.data.data)
             })
             .catch(err => {
                 setLoading(false)
@@ -42,6 +47,7 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
                 }
             })
     }
+
 
 
     useEffect(() => {
@@ -56,14 +62,8 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
             socket.emit("join", e._id);
         })
         socket.on("new message", (message) => {
-            if (message.user._id != userData.data._id) {
-                messageData.data?.map(el => {
-                    if (el._id == message.room_id) {
-                        el.messages = [message, ...el.messages]
-                    }
-                })
-                setMessage(messageData.data)
-            }
+            if (message.user._id != userData.data._id)
+                setNewMessage(message)
         });
         getMessage()
     }, []);
@@ -119,14 +119,44 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
         }
     };
 
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener(
+            'keyboardDidShow',
+            () => {
+                navigation.setOptions({ tabBarVisible: false })
+            }
+        );
+        const keyboardDidHideListener = Keyboard.addListener(
+            'keyboardDidHide',
+            () => {
+                navigation.setOptions({ tabBarVisible: true })
+            }
+        );
+
+        return () => {
+            keyboardDidHideListener.remove();
+            keyboardDidShowListener.remove();
+        };
+    }, []);
+
+    handleOnCloseModal = () => {
+        setisModalOpen(false)
+        modalizeRef.current?.close()
+    }
+    handleOpenModal = () => {
+        setisModalOpen(true)
+        modalizeRef.current?.open()
+    }
+
     return (
         <SafeAreaView style={styles.container}>
             <Animated.View style={[styles.header, { transform: [{ translateY }] }]}>
                 <Header
                     {...{ headerHeight }}
                     title={isLoading ? "Updating..." : "Chat"}
-                    headerLeft={<Entypo name="menu" size={25} color={"#fff"} />}
-                    headerRight={<TouchableOpacity onPress={() => modalizeRef.current?.open()}><IconIon name="create-outline" size={25} color={"#fff"} /></TouchableOpacity>} />
+                    subHeader={<Search headerHeight={headerHeight} />}
+                    headerLeft={<TouchableOpacity ><Text style={{ color: "#fff", fontSize: 20 }}>Edit</Text></TouchableOpacity>}
+                    headerRight={<TouchableOpacity onPress={handleOpenModal}><IconIon name="create-outline" size={25} color={"#fff"} /></TouchableOpacity>} />
             </Animated.View>
             <Animated.FlatList
                 scrollEventThrottle={16}
@@ -136,28 +166,31 @@ function HomeScreen({ navigation, userData, messageData, setMessage }) {
                 onMomentumScrollEnd={handleSnap}
                 data={messageData.data}
                 renderItem={({ item, index
-                }) => <ListChat key={index} item={item} navigation={navigation} index={index} userData={userData} />}
+                }) => <ListChat key={index}{...{ item, navigation, index, userData }} />}
                 keyExtractor={(item, index) => `list-item-${index}`}
             />
-
-            <Modalize
-                ref={modalizeRef}
-                scrollViewProps={{ showsVerticalScrollIndicator: false }}
-                // snapPoint={300}
-                modalHeight={SCREEN_HEIGHT - 70}
-                HeaderComponent={
-                    <Animated.View style={[styles.header, { transform: [{ translateY }] }]}>
-                        <Header
-                            {...{ headerHeight }}
-                            title={"New Chat"}
-                            headerLeft={<Text>Cancel</Text>}
-                            headerRight={<View></View>} />
-                    </Animated.View>
-                }
-                withHandle={false}
-            >
-                <Text>TES</Text>
-            </Modalize>
+            <Portal>
+                <Modalize
+                    ref={modalizeRef}
+                    scrollViewProps={{ showsVerticalScrollIndicator: false }}
+                    modalHeight={SCREEN_HEIGHT - 16}
+                    withHandle={false}
+                    HeaderComponent={
+                        <Animated.View style={[{ transform: [{ translateY }] }, { borderTopLeftRadius: 20, borderTopRightRadius: 20 }]}>
+                            <Header
+                                {...{ headerHeight }}
+                                title={"New Chat"}
+                                subHeader={<Search   {...{ headerHeight }} />}
+                                headerLeft={<TouchableOpacity onPress={handleOnCloseModal}><Text style={{ color: "#fff", fontSize: 20 }}>Cancel</Text></TouchableOpacity>}
+                                headerRight={<View style={{ width: 30 }}></View>} />
+                        </Animated.View>
+                    }
+                >
+                    <Contact
+                        {...{ handleScroll, handleSnap, headerHeight, contactRef }}
+                    />
+                </Modalize>
+            </Portal>
         </SafeAreaView>
     );
 }
@@ -192,7 +225,8 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
     return {
         setUser: data => dispatch(createAction("SET_USER", data)),
-        setMessage: data => dispatch(createAction("SET_MESSAGE", data)),
+        setMessages: data => dispatch(createAction("SET_MESSAGES", data)),
+        setNewMessage: data => dispatch(createAction("SET_MESSAGES", data)),
     };
 };
 

@@ -1,19 +1,20 @@
-import React, { useRef } from 'react';
-import { View, SafeAreaView, StyleSheet, Animated, TouchableOpacity } from 'react-native';
+import React, { useRef, createRef, useEffect } from 'react';
+import { View, SafeAreaView, StyleSheet, Animated, TouchableOpacity, Keyboard } from 'react-native';
 import { connect } from 'react-redux'
 import { createAction } from '../utils/createAction'
 import IconAnt from 'react-native-vector-icons/AntDesign'
 import getCloser from '../utils/getCloser';
 import Header from '../components/Header'
 import Contact from '../components/container/Contact';
+import Search from '../components/Search';
 
 
 const { diffClamp } = Animated;
 const headerHeight = 58 * 2;
 
-function ContactListScreen({ }) {
+function ContactListScreen({ navigation }) {
 
-    const ref = useRef(null);
+    const contactRef = createRef();
 
     const scrollY = useRef(new Animated.Value(0));
     const scrollYClamped = diffClamp(scrollY.current, 0, headerHeight);
@@ -63,6 +64,28 @@ function ContactListScreen({ }) {
     };
 
 
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener(
+            'keyboardDidShow',
+            () => {
+                navigation.setOptions({ tabBarVisible: false })
+            }
+        );
+        const keyboardDidHideListener = Keyboard.addListener(
+            'keyboardDidHide',
+            () => {
+                navigation.setOptions({ tabBarVisible: true })
+            }
+        );
+
+        return () => {
+            keyboardDidHideListener.remove();
+            keyboardDidShowListener.remove();
+        };
+    }, []);
+
+
+
 
     return (
         <SafeAreaView style={styles.container}>
@@ -70,14 +93,18 @@ function ContactListScreen({ }) {
                 <Header
                     {...{ headerHeight }}
                     title={"Contact"}
+                    subHeader={<Search headerHeight={headerHeight} />}
                     headerLeft={<View style={{ width: 25 }}></View>}
                     headerRight={<TouchableOpacity onPress={() => alert("add contact")}><IconAnt name="plus" size={25} color={"#fff"} /></TouchableOpacity>} />
             </Animated.View>
             <Contact
-                ref={ref}
-                handleScroll={handleScroll}
-                handleSnap={handleSnap}
-                headerHeight={headerHeight}
+                contentContainerStyle={{ paddingTop: headerHeight }}
+                {...{
+                    contactRef,
+                    handleScroll,
+                    handleSnap,
+                    headerHeight,
+                }}
             />
         </SafeAreaView>
     );
